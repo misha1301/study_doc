@@ -1,4 +1,5 @@
 import {ErrorHandleBuilder, ErrorStrategy} from "./AppError";
+import {authenticationErrorMessages} from "./errorMessages";
 
 const CastError = new ErrorHandleBuilder((err) => {
         const message = `Invalid ${err.path}: ${err.value}.`;
@@ -17,12 +18,12 @@ const MongoDuplicateError = new ErrorHandleBuilder((err) => {
 }).build();
 
 const JsonWebTokenError = new ErrorHandleBuilder()
-    .setMessage("Invalid token!")
+    .setMessage(authenticationErrorMessages.en.BAD_JWT)
     .setStatus(403)
     .build();
 
 const TokenExpiredError = new ErrorHandleBuilder()
-    .setMessage("Token is expired!")
+    .setMessage(authenticationErrorMessages.en.EXPIRED_JWT)
     .setStatus(403)
     .build();
 

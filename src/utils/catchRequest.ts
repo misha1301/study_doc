@@ -1,8 +1,8 @@
 import {NextFunction, Request, Response} from "express";
-import User from "../models/User";
+import {IUserDocument} from "../models/User";
 
 export interface IVerifiedRequest extends Request{
-    user: typeof User;
+    user: IUserDocument;
 }
 
 type requestFunctionType = (req: Request | IVerifiedRequest, res: Response, next: NextFunction) => Promise<void>;
