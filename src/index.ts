@@ -8,11 +8,19 @@ process.on('uncaughtException', (err) => {
 });
 
 import express, {Request, Response, NextFunction} from "express";
-import { rateLimit } from 'express-rate-limit';
+import mongoose from 'mongoose';
+import {rateLimit} from 'express-rate-limit';
 import helmet from "helmet";
+import hpp from "hpp";
+
+import i18next from 'i18next';
+import Backend from 'i18next-fs-backend';
+import i18nextMiddleware from 'i18next-http-middleware';
+
+import cors from "cors";
 import mongoSanitize from 'express-mongo-sanitize';
 import AppError from "./utils/AppError";
-import handleClientErrorStrategy from "./utils/errorStrategies";
+import cookieParser from 'cookie-parser';
 
 import connectDB from "./db/dbConnection";
 import errorHandler from "./controllers/errorController";
@@ -22,7 +30,12 @@ connectDB().then(() => {
 });
 
 const app = express();
-const port = process.env.PORT || 5050;
+const PORT = process.env.PORT || 5050;
+
+// app.use(cors());
+
+//Set security HTTP headers
+app.use(helmet());
 
 const limiter = rateLimit({
     limit: 100,
@@ -30,12 +43,45 @@ const limiter = rateLimit({
     message: "To many requests from your IP, please try again in an hour"
 })
 
-app.use('/', limiter);
-app.use(helmet());
+i18next
+    .use(Backend)
+    .use(i18nextMiddleware.LanguageDetector)
+    .init({
+        fallbackLng: 'en',
+        lng: 'en',
+        ns: ["translation"],
+        defaultNS: "translation",
+        backend: {
+            loadPath: "./locales/{{lng}}/{{ns}}.json",
+        },
+        detection: {
+            lookupHeader: "accept-language",
+        }
+    })
 
+app.use(i18nextMiddleware.handle(i18next));
+
+//Limit requests from single IP
+app.use('/', limiter);
+
+app.use(cookieParser());
 app.use(express.json({limit: '10kb'}));
-app.use("/article", require("./routes/articleRoutes"));
-app.use("/auth", require("./routes/userRoutes"));
+
+//DAta sanitization against NoSQL query injection
+app.use(mongoSanitize());
+
+//Prevent parameter pollution
+app.use(hpp(
+    {
+        whitelist: [
+            "numberOfSavings",
+            "numberOfReviews"
+        ]
+    }
+));
+
+app.use("/articles", require("./routes/articleRoutes"));
+app.use("/users", require("./routes/userRoutes"));
 
 app.all("*", (reg: Request, res: Response, next: NextFunction) => {
     const err = new AppError(`Can't find ${reg.originalUrl}`, 404)
@@ -44,9 +90,11 @@ app.all("*", (reg: Request, res: Response, next: NextFunction) => {
 
 app.use(errorHandler);
 
-const server = app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
-});
+const server = app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
+// mongoose.connection.once("open", () => {
+//     server = app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// });
 
 process.on('unhandledRejection', (err: any) => {
     console.log(err.name, err.message);
@@ -55,4 +103,6 @@ process.on('unhandledRejection', (err: any) => {
         process.exit(1);
     })
 });
+
+export default app;
 
