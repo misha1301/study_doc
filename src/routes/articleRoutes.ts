@@ -1,8 +1,8 @@
 import {Request, Response, NextFunction, Router} from "express";
+import * as articleController from './../controllers/articleController';
+import verifyJWT from './../middlewares/verifyJWT';
 
 const router = Router();
-
-const articleController = require('./../controllers/articleController');
 
 router.param('id', (req:Request, res:Response, next:NextFunction, val:any) => {
     next();
@@ -11,6 +11,8 @@ router.param('id', (req:Request, res:Response, next:NextFunction, val:any) => {
 router.route('/')
     .get(articleController.getAllArticles)
     .post(articleController.createArticle);
+
+router.use(verifyJWT);
 
 router.route('/:id')
     .get(articleController.getArticle)
