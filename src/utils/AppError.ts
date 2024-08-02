@@ -1,4 +1,4 @@
-type errParser = (err: any) => [string, number];
+import {TFunction} from "i18next";
 
 class AppError extends Error {
     status: string;
@@ -19,15 +19,17 @@ class AppError extends Error {
     }
 }
 
-class ErrorHandler {
+type errParser = (err: any, translation: TFunction) => [string, number];
+
+class ErrorCallback {
     _errParser: errParser;
 
     constructor(errParser: errParser) {
         this._errParser = errParser;
     }
 
-    createError(err: any) {
-        const [message, status] = this._errParser(err);
+    createError(err: any, translation: TFunction) {
+        const [message, status] = this._errParser(err, translation);
         return new AppError(message, status)
     }
 }
@@ -55,12 +57,12 @@ export class ErrorHandleBuilder {
 
     build() {
         if (this._parser) {
-            return new ErrorHandler(this._parser)
+            return new ErrorCallback(this._parser)
         } else {
-            return new ErrorHandler((err) => {
-                const message = this._message;
+            return new ErrorCallback((err, translation) => {
+                const message = this._message.startsWith('errors:') ? translation(this._message) : this._message;
                 const status = this._status;
-                return [message, status];
+                return [message as string, status];
             });
         }
     }
@@ -73,11 +75,11 @@ export class ErrorStrategy {
         this.strategies = {...strategies}
     }
 
-    getAppError(errorName: string, errObject: any) {
+    getAppError(errorName: string, err: any, translation: TFunction) {
         if (!this.strategies?.[errorName])
             return;
 
-        return this.strategies[errorName].createError(errObject);
+        return this.strategies[errorName].createError(err, translation);
     }
 }
 
