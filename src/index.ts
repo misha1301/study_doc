@@ -49,10 +49,10 @@ i18next
     .init({
         fallbackLng: 'en',
         lng: 'en',
-        ns: ["translation"],
-        defaultNS: "translation",
+        ns: ["errors"],
+        defaultNS: "errors",
         backend: {
-            loadPath: "./locales/{{lng}}/{{ns}}.json",
+            loadPath: __dirname + "/locales/{{lng}}/{{ns}}.json",
         },
         detection: {
             lookupHeader: "accept-language",
@@ -83,8 +83,8 @@ app.use(hpp(
 app.use("/articles", require("./routes/articleRoutes"));
 app.use("/users", require("./routes/userRoutes"));
 
-app.all("*", (reg: Request, res: Response, next: NextFunction) => {
-    const err = new AppError(`Can't find ${reg.originalUrl}`, 404)
+app.all("*", (req: Request, res: Response, next: NextFunction) => {
+    const err = new AppError(req.t("errors:request.NO_ROUTE", {route: req.originalUrl.replace(/[^\w\s]/gi, '')}), 404)
     next(err);
 });
 
