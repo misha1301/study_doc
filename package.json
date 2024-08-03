@@ -5,10 +5,13 @@
   "main": "index.js",
   "scripts": {
     "start": "ts-node src/index.ts",
-    "dev:prod": "NODE_ENV=production nodemon src/index.ts",
+    "dev:prod": "dotenv NODE_ENV=production nodemon src/index.ts",
     "dev": "nodemon src/index.ts",
     "debug": "ndb src/index.ts",
-    "test": "jest --watch"
+    "test": "jest --watchAll --detectOpenHandles"
+  },
+  "jest": {
+    "preset": "./jest.config.ts"
   },
   "author": "",
   "license": "ISC",
