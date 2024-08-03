@@ -27,5 +27,8 @@
     "NO_AUTH_DATA": "Please provide email or password!",
     "NO_EMAIL": "Please provide your email!",
     "NO_ROUTE": "Can't find route: {{route}}"
+  },
+  "server": {
+    "UNKNOWN_ERROR": "Unknown server error"
   }
 }
