@@ -16,7 +16,6 @@
 
 ## Authentication
 
-Describe the authentication method used (e.g., API key, OAuth, JWT).
 
 **Example:**
 
@@ -39,9 +38,4 @@ List and describe each endpoint, including the HTTP method, URL, parameters, req
 
 ### 1. Get All Articles
 
-    "id": 2,
-    "name": "Item 2",
-    "description": "Description of Item 2"
-  }
-]
 
