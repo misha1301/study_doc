@@ -37,34 +37,8 @@ Multi language server
 
 List and describe each endpoint, including the HTTP method, URL, parameters, request body, and response.
 
-### 1. Get All Items
+### 1. Get All Articles
 
-**Endpoint:** `/items`  
-**Method:** `GET`  
-**Description:** Retrieves a list of all items.
-
-**Request:**
-
-- **Headers:**  
-  `Authorization: Bearer <token>`
-
-- **Parameters:**  
-  - `page` (optional, integer): Page number for pagination.
-  - `limit` (optional, integer): Number of items per page.
-
-**Response:**
-
-- **Status Code:** `200 OK`
-- **Body:**
-
-```json
-[
-  {
-    "id": 1,
-    "name": "Item 1",
-    "description": "Description of Item 1"
-  },
-  {
     "id": 2,
     "name": "Item 2",
     "description": "Description of Item 2"
