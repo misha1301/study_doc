@@ -1,8 +1,5 @@
-import {NextFunction} from "express";
 import crypto from 'crypto'
-
 import bcrypt from 'bcryptjs';
-// const bcrypt = require('bcryptjs');
 import mongoose, {Schema, Document, Model} from 'mongoose';
 const validator = require('validator');
 
@@ -41,23 +38,24 @@ const userSchema: Schema<IUserDocument> = new Schema({
         select: false,
         unique: true,
         lowercase: true,
-        required: [true, "Email is required!"],
-        maxlength: [50, "An email mast have less or equal then 50 characters!"],
-        validate: [validator.isEmail, "Email are invalid!"]
+        required: [true, "errors:validation.EMAIL_REQUIRED"],
+        maxlength: [50, "errors:validation.EMAIL_MAX"],
+        validate: [validator.isEmail, "errors:validation.BAD_EMAIL"]
     },
     username: {
         type: String,
         unique: true,
         lowercase: true,
-        required: [true, "Username is required!"],
-        maxlength: [20, "Username mast have less or equal then 20 characters"],
-        minlength: [4, "Username mast have more or equal then 4 characters"]
+        required: [true, "errors:validation.USERNAME_REQUIRED"],
+        maxlength: [20, "errors:validation.USERNAME_MAX"],
+        minlength: [4, "errors:validation.USERNAME_MIN"]
     },
     password: {
         type: String,
         select: false,
-        required: [true, "Password is required!"],
-        maxlength: [20, "Password mast have less or equal then 20 characters"],
+        required: [true, "errors:validation.PASSWORD_REQUIRED"],
+        maxlength: [20, "errors:validation.PASSWORD_MAX"],
+        minlength: [7, "errors:validation.PASSWORD_MIN"]
     },
     passwordChangedAt: Date,
     passwordResetToken: String,
