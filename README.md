@@ -1,4 +1,4 @@
-# study_doc  `curently in progress...`
+# study_doc  `currently in progress...`
 `RESTful API`
 ## Overview
 
@@ -17,16 +17,7 @@
 ## Authentication
 
 
-**Example:**
-
- 
-
-Multi language server 
-
- 
-
-
-
+**Example:** 
 
  <img src="https://github.com/user-attachments/assets/407a1ae6-d65d-44f9-a2e8-10ceacf9235a" width="800">
 
