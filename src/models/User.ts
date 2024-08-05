@@ -38,7 +38,7 @@ const userSchema: Schema<IUserDocument> = new Schema({
         select: false,
         unique: true,
         lowercase: true,
-        required: [true, "errors:validation.REQUIRED_EMAIL"],
+        required: [true, "errors:validation.EMAIL_REQUIRED"],
         maxlength: [50, "errors:validation.EMAIL_MAX"],
         validate: [validator.isEmail, "errors:validation.BAD_EMAIL"]
     },

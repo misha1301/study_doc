@@ -12,7 +12,7 @@
     "UNAUTHORIZED": "You are unauthorized! Try to login"
   },
   "validation": {
-    "REQUIRED_EMAIL": "Email is required!",
+    "EMAIL_REQUIRED": "Email is required!",
     "EMAIL_MAX": "An email mast have less or equal then 50 characters!",
     "BAD_EMAIL": "Email are invalid!",
     "USERNAME_REQUIRED": "Username is required!",
@@ -30,5 +30,8 @@
   },
   "server": {
     "UNKNOWN_ERROR": "Unknown server error"
+  },
+  "query": {
+    "NO_DOCUMENT_FOUND": "No document found with that ID"
   }
 }

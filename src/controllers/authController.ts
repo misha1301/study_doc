@@ -59,7 +59,7 @@ export const login = catchRequest(
         const {email, password} = req.body;
 
         if (!email || !password) {
-            return next(new AppError("Missing email or password", 400))
+            return next(new AppError(req.t('errors:authentication.BAD_JWT'), 400))
         }
 
         const user = await User.findOne({email}).select('+password');

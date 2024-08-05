@@ -6,23 +6,25 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
     err.status = err.status || 'error';
 
     if (process.env.NODE_ENV === "development") {
-        sendErrorDev(err, res);
+        sendErrorDev(err, req, res);
     } else {
         let error = {...err};
+        error.message = err.message;
 
-        if(err.code === 11000)
+        if (err.code === 11000)
             error.name = "MongoDuplicateError"
 
-        const clientError = clientErrorStrategy.getAppError(error.name || err.name, err);
+        const clientError = clientErrorStrategy
+            .getAppError(err.name || error?.name, err, req.t);
 
-        if(clientError)
+        if (clientError)
             error = clientError;
 
-        sendErrorProd(error, res);
+        sendErrorProd(error, req, res);
     }
 }
 
-const sendErrorDev = (err: any, res: Response) => {
+const sendErrorDev = (err: any, req: Request, res: Response) => {
     res.status(err.statusCode).json({
         status: err.status,
         message: err.message,
@@ -31,18 +33,19 @@ const sendErrorDev = (err: any, res: Response) => {
     });
 }
 
-const sendErrorProd = (err: any, res: Response) => {
+const sendErrorProd = (err: any, req: Request, res: Response) => {
+    // console.log(err)
     if (err.isOperational) {
         res.status(err.statusCode).json({
             status: err.status,
-            message: err.message
+            message: err.message?.startsWith('errors:') ? req.t(err.message) : err.message
         });
     } else {
         console.error("Error 🔥", err);
 
         res.status(500).json({
             status: "error",
-            message: "Unknown server error!"
+            message: req.t("errors:server.UNKNOWN_ERROR")
         });
     }
 }
