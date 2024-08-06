@@ -1,17 +1,15 @@
-import {Response, NextFunction} from "express";
+import {Request, Response, NextFunction} from "express";
 import AppError from "../utils/AppError";
 import {IVerifiedRequest} from "../utils/catchRequest";
-import {authorizationErrorMessages} from "../utils/errorMessages";
 
+const verifyRoles = (...allowedRoles: string[]) => {
+    return (req: Request | IVerifiedRequest, res:Response, next: NextFunction) => {
 
-const verifyRoles = (allowedRoles: [string]) => {
-    return (req:IVerifiedRequest, res:Response, next: NextFunction) => {
-
-        if(!allowedRoles.includes(req.user.role))
-            return next(new AppError(authorizationErrorMessages.en.NO_PERMISSION,403));
+        if(!allowedRoles.includes((req as IVerifiedRequest).user.role.toLowerCase()))
+            return next(new AppError(req.t("errors:authorization.NO_PERMISSION"),403));
 
         next();
     }
 }
 
-module.exports = verifyRoles;
+export default verifyRoles;
