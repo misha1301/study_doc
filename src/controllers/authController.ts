@@ -38,6 +38,7 @@ const createSendToken = async (user: IUserDocument, statusCode: number, res: Res
     return res.status(statusCode).json({
         status: "success",
         data: user,
+        token: accessToken
     });
 }
 
