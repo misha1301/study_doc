@@ -1,16 +1,18 @@
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs';
 import mongoose, {Schema, Document, Model} from 'mongoose';
+
 const validator = require('validator');
 
 interface IUSerPreferences {
     language: string,
     theme: string,
-    notification:  boolean,
+    notification: boolean,
 }
+
 export interface IUser {
     email: string,
-    username:  string,
+    username: string,
     password: string,
     passwordChangedAt: Date,
     passwordResetToken: string,
@@ -26,13 +28,14 @@ export interface IUser {
     preferences: IUSerPreferences
 }
 
-export interface IUserDocument extends IUser, Document{
+export interface IUserDocument extends IUser, Document {
     isPasswordChangedAfterJWT: (JWTTimestamp: number) => boolean,
     comparePassword: (candidatePassword: string, userPassword: string) => Promise<boolean>,
-    createPasswordResetToken: () => number
+    createPasswordResetToken: () => number,
+    compareRefreshToken: (candidateToken: string, userToken: string) => boolean
 }
 
-const userSchema: Schema<IUserDocument> = new Schema({
+const userSchema = new Schema<IUserDocument>({
     email: {
         type: String,
         select: false,
@@ -87,8 +90,8 @@ const userSchema: Schema<IUserDocument> = new Schema({
         default: undefined,
     },
     refreshToken: String,
-    active:{
-        type:Boolean,
+    active: {
+        type: Boolean,
         default: true,
         select: false
     },
@@ -116,9 +119,9 @@ userSchema.pre("save",
     });
 
 userSchema.pre("save",
-    function (next){
+    function (next) {
 
-        if(!this.isModified('password' || this.isNew))
+        if (!this.isModified('password' || this.isNew))
             return next();
 
         const oneSec = 1000;
@@ -140,6 +143,10 @@ userSchema.methods.comparePassword = async function (candidatePassword: string, 
     return await bcrypt.compare(candidatePassword, userPassword);
 }
 
+userSchema.methods.compareRefreshToken = function (candidateToken: string, userToken: string): boolean {
+    return candidateToken === userToken;
+}
+
 userSchema.methods.createPasswordResetToken = function () {
     const resetDigits = Math.floor(100000 + Math.random() * 900000); // 6 digits
 
@@ -148,9 +155,9 @@ userSchema.methods.createPasswordResetToken = function () {
         .update(`${resetDigits}`)
         .digest('hex');
 
-    const tenMinInMilliseconds = 10 * 60 * 1000;
+    const tenMin = 10 * 60 * 1000;
 
-    this.passwordResetExpires = Date.now() + tenMinInMilliseconds;
+    this.passwordResetExpires = Date.now() + tenMin;
 
     return resetDigits;
 }

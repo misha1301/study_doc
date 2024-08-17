@@ -28,7 +28,7 @@ const verifyJWT = catchRequest(
         if(currentUser.isPasswordChangedAfterJWT(decodedJWT.iat as number))
             return next(new AppError(req.t("errors:authentication.PASSWORD_WAS_CHANGED"), 401));
 
-        (req as IVerifiedRequest).user = currentUser;
+        req.user = currentUser;
 
         next();
     }

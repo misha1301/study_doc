@@ -5,8 +5,6 @@ import User from "../models/User";
 const errors_en = require('./../locales/en/errors.json');
 const errors_ua = require('./../locales/ua/errors.json');
 
-import i18next from "i18next";
-
 beforeEach(() => {
     return User.deleteMany();
 })
@@ -95,14 +93,14 @@ describe("User registration", () => {
 describe("Internationalization", () => {
     test.each`
         field         | value                                | expectedMessage
-        ${"username"} | ${null}                              | ${errors_en.validation.USERNAME_REQUIRED}
+        ${"username"} | ${null}                              | ${errors_en.request.NO_USERNAME}
         ${"username"} | ${"ser"}                             | ${errors_en.validation.USERNAME_MIN}
         ${"username"} | ${"useruseruseruseruseruser"}        | ${errors_en.validation.USERNAME_MAX}
-        ${"email"}    | ${null}                              | ${errors_en.validation.EMAIL_REQUIRED}
+        ${"email"}    | ${null}                              | ${errors_en.request.NO_EMAIL}
         ${"email"}    | ${"usergmail.com"}                   | ${errors_en.validation.BAD_EMAIL}
         ${"email"}    | ${"ngemailuptofiftycharacterslong" +
                           "emailuptofiftycharact@gmail.com"} | ${errors_en.validation.EMAIL_MAX}
-        ${"password"} | ${null}                              | ${errors_en.validation.PASSWORD_REQUIRED}
+        ${"password"} | ${null}                              | ${errors_en.request.NO_PASSWORD}
         ${"password"} | ${"passwo"}                          | ${errors_en.validation.PASSWORD_MIN}
         ${"password"} | ${"userpassworduserpassword"}        | ${errors_en.validation.PASSWORD_MAX}
     `('when $field is $value message $expectedMessage is received when language is set as english', ({field, value, expectedMessage}, done) => {
@@ -118,14 +116,14 @@ describe("Internationalization", () => {
 
     test.each`
         field         | value                                | expectedMessage
-        ${"username"} | ${null}                              | ${errors_ua.validation.USERNAME_REQUIRED}
+        ${"username"} | ${null}                              | ${errors_ua.request.NO_USERNAME}
         ${"username"} | ${"ser"}                             | ${errors_ua.validation.USERNAME_MIN}
         ${"username"} | ${"useruseruseruseruseruser"}        | ${errors_ua.validation.USERNAME_MAX}
-        ${"email"}    | ${null}                              | ${errors_ua.validation.EMAIL_REQUIRED}
+        ${"email"}    | ${null}                              | ${errors_ua.request.NO_EMAIL}
         ${"email"}    | ${"usergmail.com"}                   | ${errors_ua.validation.BAD_EMAIL}
         ${"email"}    | ${"ngemailuptofiftycharacterslong" +
                           "emailuptofiftycharact@gmail.com"} | ${errors_ua.validation.EMAIL_MAX}
-        ${"password"} | ${null}                              | ${errors_ua.validation.PASSWORD_REQUIRED}
+        ${"password"} | ${null}                              | ${errors_ua.request.NO_PASSWORD}
         ${"password"} | ${"passwo"}                          | ${errors_ua.validation.PASSWORD_MIN}
         ${"password"} | ${"userpassworduserpassword"}        | ${errors_ua.validation.PASSWORD_MAX}
     `('when $field is $value message $expectedMessage is received when language is set as ukraine', ({field, value, expectedMessage}, done) => {

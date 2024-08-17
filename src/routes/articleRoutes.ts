@@ -13,7 +13,7 @@ router.route('/')
     .post(verifyJWT, verifyRoles("user"), articleController.createArticle);
 
 router.use(verifyJWT);
-router.use(verifyRoles("user", "admin"))
+router.use(verifyRoles("user", "admin"));
 
 router.route('/:id')
     .get(articleController.getArticle)
