@@ -1,7 +1,7 @@
 import jwt, {JwtPayload, Secret, SignOptions, VerifyOptions} from "jsonwebtoken";
 
 interface IVerifyTokenPayload extends JwtPayload {
-    id?: string | undefined
+    id?: string | undefined;
 }
 
 export const verifyToken = (token: string, secretKey: string, options?: VerifyOptions): Promise<IVerifyTokenPayload> => {
@@ -25,23 +25,23 @@ export const signToken = (payload: string | object, secretKey: Secret, options: 
                 if (error)
                     reject(error);
                 else
-                    resolve(decoded as string)
+                    resolve(decoded as string);
             });
     });
 }
 
-export const signAccessToken = (userId: object): Promise<string> => {
+export const signAccessToken = (payload: object): Promise<string> => {
     return signToken(
-        userId,
+        payload,
         process.env.ACCESS_TOKEN_SECRET as string,
-        {expiresIn: process.env.ACCESS_JWT_EXPIRES_IN})
+        {expiresIn: process.env.ACCESS_JWT_EXPIRES_IN});
 }
 
-export const signRefreshToken = (userId: string): Promise<string> => {
+export const signRefreshToken = (payload: object): Promise<string> => {
     return signToken(
-        userId,
+        payload,
         process.env.REFRESH_TOKEN_SECRET as string,
-        {expiresIn: process.env.REFRESH_JWT_EXPIRES_IN})
+        {expiresIn: process.env.REFRESH_JWT_EXPIRES_IN});
 }
 
 

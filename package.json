@@ -6,7 +6,7 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "dev:prod": "cross-env NODE_ENV=production nodemon src/index.ts",
-    "dev": "nodemon src/index.ts",
+    "dev": "cross-env NODE_ENV=development nodemon src/index.ts",
     "debug": "ndb src/index.ts",
     "test": "cross-env NODE_ENV=test jest --watchAll --detectOpenHandles"
   },
@@ -40,7 +40,8 @@
     "ndb": "^1.1.5",
     "nodemailer": "^6.9.14",
     "typescript": "^5.4.5",
-    "validator": "^13.12.0"
+    "validator": "^13.12.0",
+    "yup": "^1.4.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

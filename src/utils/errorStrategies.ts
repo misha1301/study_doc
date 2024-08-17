@@ -1,5 +1,4 @@
 import {ErrorHandleBuilder, ErrorStrategy} from "./AppError";
-import {authenticationErrorMessages} from "./errorMessages";
 
 const CastError = new ErrorHandleBuilder((err, translation) => {
         const message = `Invalid ${err.path}: ${err.value}.`;
@@ -8,8 +7,12 @@ const CastError = new ErrorHandleBuilder((err, translation) => {
 ).build();
 
 const ValidationError = new ErrorHandleBuilder((err, translation) => {
-    const errors = Object.values(err.errors).map((val: any)=>{
-        return translation(val.message);
+
+    const errors = Object.values(err.errors).map((val: any) => {
+        if(val.message)
+            return translation(val.message);//for mongoose`s error object
+        else
+            return translation(val);//for yup`s error object
     });
 
     return [errors.join("; "), 400];
