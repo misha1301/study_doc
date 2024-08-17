@@ -2,8 +2,18 @@ import {Model} from "mongoose";
 import catchRequest from "../utils/catchRequest";
 import AppError from "../utils/AppError";
 import APIFeatures from "../middlewares/queryMiddleware";
+import responseFactory from "../utils/responseFactory";
 import Article from "../models/Article";
 
+
+export const createOne = (Model: Model<any>) => catchRequest(
+    async (req, res, next) => {
+
+        const doc = await Model.create(req.body);
+
+        responseFactory
+            .sendSuccess(res, 201, {data: doc});
+    });
 
 export const deleteOne = (Model: Model<any>) => catchRequest(
     async (req, res, next) => {
@@ -12,10 +22,8 @@ export const deleteOne = (Model: Model<any>) => catchRequest(
         if (!doc)
             return next(new AppError("errors:query.NO_DOCUMENT_FOUND", 404));
 
-        res.status(204).json({
-            status: "success",
-            data: null
-        });
+        responseFactory
+            .sendSuccess(res, 204, {data: null});
     });
 
 export const getOne = (Model: Model<any>) => catchRequest(
@@ -25,10 +33,8 @@ export const getOne = (Model: Model<any>) => catchRequest(
         if (!doc)
             return next(new AppError("errors:query.NO_DOCUMENT_FOUND", 404));
 
-        res.status(200).json({
-            status: "success",
-            data: doc
-        });
+        responseFactory
+            .sendSuccess(res, 200, {data: doc});
     });
 
 export const getAll = (Model: Model<any>) => catchRequest(
@@ -42,10 +48,22 @@ export const getAll = (Model: Model<any>) => catchRequest(
 
         const doc = await features.query;
 
-        res.status(200).json({
-            status: "success",
-            results: doc.length,
-            data: doc,
-        });
+        responseFactory
+            .sendSuccess(res, 200, {results: doc.length, data: doc});
     }
 )
+
+export const updateOne = (Model: Model<any>) =>catchRequest(
+    async (req, res, next) => {
+
+        const doc = await Model.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true,
+        });
+
+        if (!doc)
+            return next(new AppError("errors:query.NO_DOCUMENT_FOUND", 404));
+
+        responseFactory
+            .sendSuccess(res, 200, {data: doc});
+    });
