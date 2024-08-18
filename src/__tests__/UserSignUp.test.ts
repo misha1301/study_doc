@@ -1,12 +1,24 @@
 import request from "supertest";
+import mongoose from "mongoose";
+
 import app from "../index";
 import User from "../models/User";
 
 const errors_en = require('./../locales/en/errors.json');
 const errors_ua = require('./../locales/ua/errors.json');
 
-beforeEach(() => {
-    return User.deleteMany();
+beforeAll((done) => {
+    mongoose.connection.once("open", () => {
+        done();
+    });
+});
+
+beforeEach(async () => {
+    await User.deleteMany();
+})
+
+afterAll(async () => {
+    await User.deleteMany();
 })
 
 const validUser = {
@@ -16,17 +28,15 @@ const validUser = {
 }
 
 const postUser = (userAuth: {}, options?: any) => {
-    const agent = request(app).post("/users/signup");
+    const agent = request(app).post("/auth/signup");
 
     if(options?.language){
         agent.set('Accept-Language', options.language)
     }
-
     return agent.send(userAuth);
 }
 
 describe("User registration", () => {
-
     test("return 200 OK when signup request is valid", (done) => {
         postUser(validUser)
             .then((res) => {
@@ -34,7 +44,6 @@ describe("User registration", () => {
                 done();
             });
     });
-
     test("save the user to database", (done) => {
         postUser(validUser)
             .then(() => {
@@ -45,7 +54,6 @@ describe("User registration", () => {
                     })
             });
     });
-
     test("save the username and email to database", (done) => {
         postUser(validUser)
             .then(() => {
@@ -57,7 +65,6 @@ describe("User registration", () => {
                     })
             });
     });
-
     test("return same username and email back to a client", (done) => {
         postUser(validUser)
             .then((res) => {
@@ -66,18 +73,26 @@ describe("User registration", () => {
                 done();
             });
     });
-
     test("hashes the password to database", (done) => {
         postUser(validUser)
             .then(() => {
-                User.findOne().select("+password")
+                User.findOne({username: validUser.username}).select("+password")
                     .then((user) => {
                         expect(user?.password).not.toBe(validUser.password);
                         done();
                     })
             });
     });
-
+    test("save refresh token to database", (done) => {
+        postUser(validUser)
+            .then(() => {
+                User.findOne({username: validUser.username}).select("+refreshToken")
+                    .then((user) => {
+                        expect(user?.refreshToken).not.toBe('');
+                        done();
+                    })
+            });
+    });
     test("return 400 when username is null", (done) => {
         postUser({
             username: null,
@@ -113,7 +128,6 @@ describe("Internationalization", () => {
                 done();
             });
     });
-
     test.each`
         field         | value                                | expectedMessage
         ${"username"} | ${null}                              | ${errors_ua.request.NO_USERNAME}
