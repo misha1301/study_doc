@@ -24,7 +24,7 @@ export interface IUser {
     registerDate: Date,
     lastActiveDate: Date,
     refreshToken: string,
-    active: boolean,
+    accountStatus: string,
     preferences: IUSerPreferences
 }
 
@@ -87,12 +87,16 @@ const userSchema = new Schema<IUserDocument>({
     },
     lastActiveDate: {
         type: Date,
-        default: undefined,
+        default: Date.now,
     },
-    refreshToken: String,
-    active: {
-        type: Boolean,
-        default: true,
+    refreshToken: {
+        type: String,
+        select: false
+    },
+    accountStatus: {
+        type: String,
+        enums: ["deleted", "unconfirmed", "active"],
+        default: "unconfirmed",
         select: false
     },
     preferences: {
@@ -121,7 +125,7 @@ userSchema.pre("save",
 userSchema.pre("save",
     function (next) {
 
-        if (!this.isModified('password' || this.isNew))
+        if (!this.isModified('password') || this.isNew)
             return next();
 
         const oneSec = 1000;
