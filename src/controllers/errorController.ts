@@ -5,17 +5,18 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
     err.statusCode = err.statusCode || 500;
     err.status = err.status || 'error';
 
-    if (process.env.NODE_ENV === "development") {
+    if (process.env.NODE_ENV === "developmen") {
         sendErrorDev(err, req, res);
     } else {
         let error = {...err};
         error.message = err.message;
+        error.name = err.name;
 
         if (err.code === 11000)
             error.name = "MongoDuplicateError"
 
         const clientError = clientErrorStrategy
-            .getAppError(err.name || error?.name, err, req.t);
+            .getAppError(error.name, err, req.t);
 
         if (clientError)
             error = clientError;
@@ -27,7 +28,7 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
 const sendErrorDev = (err: any, req: Request, res: Response) => {
     res.status(err.statusCode).json({
         status: err.status,
-        message: err.message,
+        message: err.message?.startsWith('errors:') ? req.t(err.message) : err.message,
         error: err,
         stack: err.stack
     });

@@ -2,11 +2,8 @@ import User, {IUserDocument} from "./../models/User";
 import catchRequest, {IVerifiedRequest} from "../utils/catchRequest";
 import {Response} from "express";
 import AppError from "../utils/AppError";
-import {signAccessToken, verifyToken} from "../utils/JWTHandler"
-
-
-import AppValidator from "../utils/Validator";
-
+import responseFactory from "../utils/responseFactory";
+import {signAccessToken, signRefreshToken, verifyToken} from "../utils/JWTHandler"
 
 type TCookieOptions = {
     expires: Date,
@@ -14,34 +11,32 @@ type TCookieOptions = {
     secure?: boolean
 }
 
-// jwt.sign(
-//     {id: userID},
-//     secretKey,
-//     {expiresIn: process.env.JWT_EXPIRES_IN}
-// );
-
-const createSendToken = async (user: IUserDocument, statusCode: number, res: Response) => {
-
-    const accessToken = await signAccessToken({id: user._id as string});
-
-    const cookieOptions: TCookieOptions  = {
-        expires: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
-        httpOnly: true
-    }
-    if(process.env.NODE_ENV === "production")
-        cookieOptions.secure = true;
-
-    res.cookie('jwt', accessToken, cookieOptions)
-
-    user.password = '';
-
-    return res.status(statusCode).json({
-        status: "success",
-        data: user,
-        token: accessToken
-    });
+const cookieOptions: TCookieOptions = {
+    expires: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+    httpOnly: true
 }
 
+const createSendAccessToken = async (user: IUserDocument, statusCode: number, res: Response) => {9
+
+    const accessToken = await signAccessToken({id: user._id as string});
+    return responseFactory.sendSuccess(res, statusCode, {data: user, accessToken: accessToken});
+}
+
+const createSendTokens = async (user: IUserDocument, statusCode: number, res: Response) => {
+
+    const accessToken = await signAccessToken({id: user._id as string});
+    const refreshToken = await signRefreshToken({id: user._id as string});
+
+    user.refreshToken = refreshToken;
+    await user.save({validateBeforeSave: false});
+
+    if (process.env.NODE_ENV === "production")
+        cookieOptions.secure = true;
+
+    res.cookie('jwt', refreshToken, cookieOptions)
+
+    return responseFactory.sendSuccess(res, statusCode, {data: user, accessToken: accessToken});
+}
 
 export const signup = catchRequest(
     async (req, res, next) => {
@@ -52,28 +47,48 @@ export const signup = catchRequest(
             password: req.body.password
         });
 
-        await createSendToken(newUser, 201, res);
+        await createSendTokens(newUser, 201, res);
     });
 
 export const login = catchRequest(
     async (req, res, next) => {
-        const {email, password} = req.body;
 
-        if (!email || !password) {
-            return next(new AppError(req.t('errors:authentication.BAD_JWT'), 400))
+        const user = await User
+            .findOne({$or: [{email: req.body.email}, {username: req.body.username}]})
+            .select('+password');
+
+        if (!user || !(await user.comparePassword(req.body.password, user.password))) {
+            return next(new AppError('errors:authentication.AUTH_DONT_MATCH', 401));
         }
 
-        const user = await User.findOne({email}).select('+password');
+        await createSendTokens(user, 200, res);
+    });
 
-        //refactor
-        if (!user || !(await user.comparePassword(password, user.password))) {
-            return next(new AppError("Incorrect email or password", 401))
+export const logout = catchRequest(
+    async(req, res, next) => {
+        const refreshToken = req.cookies.jwt;
+
+        if (!refreshToken)
+            return next(new AppError("errors:authorization.UNAUTHORIZED", 403));
+
+        const decodedJWT = await verifyToken(refreshToken, process.env.REFRESH_TOKEN_SECRET as string);
+
+        const user = await User.findById(decodedJWT.id).select("+refreshToken");
+
+        if (!user){
+            res.clearCookie('jwt', {httpOnly: true})
+            return next(new AppError(req.t("errors:authorization.UNAUTHORIZED"), 403));
         }
 
-        await createSendToken(user, 200, res);
+        user.refreshToken = '';
+        await user.save();
+
+        res.clearCookie('jwt', {httpOnly: true})
+        responseFactory.sendSuccess(res, 204, {data: ''});
     }
-);
+)
 
+//need mailer implementation
 export const forgotPassword = catchRequest(
     async (req, res, next) => {
         if (!req.body.email)
@@ -82,55 +97,55 @@ export const forgotPassword = catchRequest(
         const user = await User.findOne({email: req.body.email})
 
         if (!user)
-            return next(new AppError("There is no user with this email!", 401));
+            return next(new AppError(req.t("errors:authentication.USER_NO_EXIST", {identifier: "email"}), 401));
 
         const resetToken = user.createPasswordResetToken();
 
         await user.save({validateBeforeSave: false});
 
-
-        res.status(200).json({
-            status: "success",
-        });
-    }
-);
+        responseFactory.sendSuccess(res, 200, {data: ""});
+    });
 
 export const changePassword = catchRequest(
     async (req, res, next) => {
 
-        const user = await User.findById((req as IVerifiedRequest).user._id).select('+password');
+        if (!req.user || !req.user._id)
+            return next(new AppError("errors:authorization.UNAUTHORIZED", 401));
 
-        if(!user)
-            return next(new AppError("Please provide your current password", 401));
+        const user = await User.findById(req.user._id).select('+password');
 
-        if (!req.body.password)
-            return next(new AppError("Please provide your current password", 401));
+        if (!user)
+            return next(new AppError(req.t("errors:authentication.USER_NO_EXIST", {identifier: "email"}), 401));
 
         if (!(await user.comparePassword(req.body.password, user.password)))
-            return next(new AppError("Passwords are not the same!", 401));
+            return next(new AppError("errors:authentication.PASSWORD_NOT_SAME", 401));
 
         user.password = req.body.newPassword;
-
         await user.save();
 
-        await createSendToken(user, 200, res);
-    }
-);
+        await createSendAccessToken(user, 200, res);
+    });
 
 export const refreshToken = catchRequest(
     async (req, res, next) => {
-        const refreshToken = req.cookies.refresh_jwt
+        const refreshToken = req.cookies.jwt;
 
-        if(!refreshToken)
-            return next(new AppError("e", 500));
+        if (!refreshToken)
+            return next(new AppError("errors:authentication.MISSED_JWT", 401));
 
         const decodedJWT = await verifyToken(refreshToken, process.env.REFRESH_TOKEN_SECRET as string);
 
-        const user = await User.findById(decodedJWT.id)
+        const user = await User.findById(decodedJWT.id);
 
         if (!user)
-            return next(new AppError("User does not exist!", 401));
+            return next(new AppError(req.t("errors:authentication.USER_NO_EXIST", {identifier: "token`s id"}), 401));
 
+        if (user.isPasswordChangedAfterJWT(decodedJWT.iat as number))
+            return next(new AppError(req.t("errors:authentication.PASSWORD_WAS_CHANGED"), 401));
 
+        if (!user.compareRefreshToken(refreshToken, user.refreshToken))
+            return next(new AppError('errors:authentication.BAD_JWT', 401));
+
+        await createSendAccessToken(user, 200, res);
     });
 

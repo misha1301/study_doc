@@ -1,14 +1,24 @@
 import request from "supertest";
+import mongoose from "mongoose";
+
 import app from "../index";
 import User from "../models/User";
 
 const errors_en = require('./../locales/en/errors.json');
 const errors_ua = require('./../locales/ua/errors.json');
 
-import i18next from "i18next";
+beforeAll((done) => {
+    mongoose.connection.once("open", () => {
+        done();
+    });
+});
 
-beforeEach(() => {
-    return User.deleteMany();
+beforeEach(async () => {
+    await User.deleteMany();
+})
+
+afterAll(async () => {
+    await User.deleteMany();
 })
 
 const validUser = {
@@ -18,17 +28,15 @@ const validUser = {
 }
 
 const postUser = (userAuth: {}, options?: any) => {
-    const agent = request(app).post("/users/signup");
+    const agent = request(app).post("/auth/signup");
 
     if(options?.language){
         agent.set('Accept-Language', options.language)
     }
-
     return agent.send(userAuth);
 }
 
 describe("User registration", () => {
-
     test("return 200 OK when signup request is valid", (done) => {
         postUser(validUser)
             .then((res) => {
@@ -36,7 +44,6 @@ describe("User registration", () => {
                 done();
             });
     });
-
     test("save the user to database", (done) => {
         postUser(validUser)
             .then(() => {
@@ -47,7 +54,6 @@ describe("User registration", () => {
                     })
             });
     });
-
     test("save the username and email to database", (done) => {
         postUser(validUser)
             .then(() => {
@@ -59,7 +65,6 @@ describe("User registration", () => {
                     })
             });
     });
-
     test("return same username and email back to a client", (done) => {
         postUser(validUser)
             .then((res) => {
@@ -68,18 +73,26 @@ describe("User registration", () => {
                 done();
             });
     });
-
     test("hashes the password to database", (done) => {
         postUser(validUser)
             .then(() => {
-                User.findOne().select("+password")
+                User.findOne({username: validUser.username}).select("+password")
                     .then((user) => {
                         expect(user?.password).not.toBe(validUser.password);
                         done();
                     })
             });
     });
-
+    test("save refresh token to database", (done) => {
+        postUser(validUser)
+            .then(() => {
+                User.findOne({username: validUser.username}).select("+refreshToken")
+                    .then((user) => {
+                        expect(user?.refreshToken).not.toBe('');
+                        done();
+                    })
+            });
+    });
     test("return 400 when username is null", (done) => {
         postUser({
             username: null,
@@ -95,14 +108,14 @@ describe("User registration", () => {
 describe("Internationalization", () => {
     test.each`
         field         | value                                | expectedMessage
-        ${"username"} | ${null}                              | ${errors_en.validation.USERNAME_REQUIRED}
+        ${"username"} | ${null}                              | ${errors_en.request.NO_USERNAME}
         ${"username"} | ${"ser"}                             | ${errors_en.validation.USERNAME_MIN}
         ${"username"} | ${"useruseruseruseruseruser"}        | ${errors_en.validation.USERNAME_MAX}
-        ${"email"}    | ${null}                              | ${errors_en.validation.EMAIL_REQUIRED}
+        ${"email"}    | ${null}                              | ${errors_en.request.NO_EMAIL}
         ${"email"}    | ${"usergmail.com"}                   | ${errors_en.validation.BAD_EMAIL}
         ${"email"}    | ${"ngemailuptofiftycharacterslong" +
                           "emailuptofiftycharact@gmail.com"} | ${errors_en.validation.EMAIL_MAX}
-        ${"password"} | ${null}                              | ${errors_en.validation.PASSWORD_REQUIRED}
+        ${"password"} | ${null}                              | ${errors_en.request.NO_PASSWORD}
         ${"password"} | ${"passwo"}                          | ${errors_en.validation.PASSWORD_MIN}
         ${"password"} | ${"userpassworduserpassword"}        | ${errors_en.validation.PASSWORD_MAX}
     `('when $field is $value message $expectedMessage is received when language is set as english', ({field, value, expectedMessage}, done) => {
@@ -115,17 +128,16 @@ describe("Internationalization", () => {
                 done();
             });
     });
-
     test.each`
         field         | value                                | expectedMessage
-        ${"username"} | ${null}                              | ${errors_ua.validation.USERNAME_REQUIRED}
+        ${"username"} | ${null}                              | ${errors_ua.request.NO_USERNAME}
         ${"username"} | ${"ser"}                             | ${errors_ua.validation.USERNAME_MIN}
         ${"username"} | ${"useruseruseruseruseruser"}        | ${errors_ua.validation.USERNAME_MAX}
-        ${"email"}    | ${null}                              | ${errors_ua.validation.EMAIL_REQUIRED}
+        ${"email"}    | ${null}                              | ${errors_ua.request.NO_EMAIL}
         ${"email"}    | ${"usergmail.com"}                   | ${errors_ua.validation.BAD_EMAIL}
         ${"email"}    | ${"ngemailuptofiftycharacterslong" +
                           "emailuptofiftycharact@gmail.com"} | ${errors_ua.validation.EMAIL_MAX}
-        ${"password"} | ${null}                              | ${errors_ua.validation.PASSWORD_REQUIRED}
+        ${"password"} | ${null}                              | ${errors_ua.request.NO_PASSWORD}
         ${"password"} | ${"passwo"}                          | ${errors_ua.validation.PASSWORD_MIN}
         ${"password"} | ${"userpassworduserpassword"}        | ${errors_ua.validation.PASSWORD_MAX}
     `('when $field is $value message $expectedMessage is received when language is set as ukraine', ({field, value, expectedMessage}, done) => {

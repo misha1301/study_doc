@@ -81,27 +81,29 @@ app.use(hpp(
 ));
 
 app.use("/articles", require("./routes/articleRoutes"));
-app.use("/users", require("./routes/userRoutes"));
+app.use("/auth", require("./routes/authRoutes"));
 
 app.all("*", (req: Request, res: Response, next: NextFunction) => {
-    const err = new AppError(req.t("errors:request.NO_ROUTE", {route: req.originalUrl.replace(/[^\w\s]/gi, '')}), 404)
+    const err = new AppError(req.t("errors:request.NO_ROUTE", {route: req.originalUrl.replace(/[^\w\s]/gi, ' ')}), 404)
     next(err);
 });
 
 app.use(errorHandler);
 
-const server = app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+//const server = app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
 
-// mongoose.connection.once("open", () => {
-//     server = app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-// });
+mongoose.connection.once("open", () => {
+    if (process.env.NODE_ENV !== 'test') {
+        app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+    }
+});
 
 process.on('unhandledRejection', (err: any) => {
     console.log(err.name, err.message);
     console.log('UNHANDLED REJECTION! 🔥 Shutting down...');
-    server.close(() => {
-        process.exit(1);
-    })
+    // server.close(() => {
+    process.exit(1);
+    // })
 });
 
 export default app;

@@ -13,7 +13,7 @@ const verifyJWT = catchRequest(
         if (!authHeader || !authHeader?.startsWith('Bearer'))
             return next(new AppError(req.t("errors:authentication.MISSED_JWT"), 401));
 
-        const token = authHeader?.split(' ')[1];
+        const token = authHeader.split(' ')[1];
 
         if (!token || token === "null")//null is string cuz postman sends null like a string
             return next(new AppError(req.t("errors:authorization.UNAUTHORIZED"), 401));
@@ -28,7 +28,7 @@ const verifyJWT = catchRequest(
         if(currentUser.isPasswordChangedAfterJWT(decodedJWT.iat as number))
             return next(new AppError(req.t("errors:authentication.PASSWORD_WAS_CHANGED"), 401));
 
-        (req as IVerifiedRequest).user = currentUser;
+        req.user = currentUser;
 
         next();
     }
