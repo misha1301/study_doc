@@ -3,7 +3,6 @@ import catchRequest from "../utils/catchRequest";
 import AppError from "../utils/AppError";
 import APIFeatures from "../middlewares/queryMiddleware";
 import responseFactory from "../utils/responseFactory";
-import Article from "../models/Article";
 
 
 export const createOne = (Model: Model<any>) => catchRequest(
@@ -50,8 +49,7 @@ export const getAll = (Model: Model<any>) => catchRequest(
 
         responseFactory
             .sendSuccess(res, 200, {results: doc.length, data: doc});
-    }
-)
+    });
 
 export const updateOne = (Model: Model<any>) =>catchRequest(
     async (req, res, next) => {

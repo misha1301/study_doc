@@ -27,6 +27,9 @@ const createSendTokens = async (user: IUserDocument, statusCode: number, res: Re
     const accessToken = await signAccessToken({id: user._id as string});
     const refreshToken = await signRefreshToken({id: user._id as string});
 
+    user.refreshToken = refreshToken;
+    await user.save({validateBeforeSave: false});
+
     if (process.env.NODE_ENV === "production")
         cookieOptions.secure = true;
 
@@ -55,11 +58,35 @@ export const login = catchRequest(
             .select('+password');
 
         if (!user || !(await user.comparePassword(req.body.password, user.password))) {
-            return next(new AppError('errors:authentication.AUTH_DONT_MATCH', 401))
+            return next(new AppError('errors:authentication.AUTH_DONT_MATCH', 401));
         }
 
         await createSendTokens(user, 200, res);
     });
+
+export const logout = catchRequest(
+    async(req, res, next) => {
+        const refreshToken = req.cookies.jwt;
+
+        if (!refreshToken)
+            return next(new AppError("errors:authorization.UNAUTHORIZED", 403));
+
+        const decodedJWT = await verifyToken(refreshToken, process.env.REFRESH_TOKEN_SECRET as string);
+
+        const user = await User.findById(decodedJWT.id).select("+refreshToken");
+
+        if (!user){
+            res.clearCookie('jwt', {httpOnly: true})
+            return next(new AppError(req.t("errors:authorization.UNAUTHORIZED"), 403));
+        }
+
+        user.refreshToken = '';
+        await user.save();
+
+        res.clearCookie('jwt', {httpOnly: true})
+        responseFactory.sendSuccess(res, 204, {data: ''});
+    }
+)
 
 //need mailer implementation
 export const forgotPassword = catchRequest(
@@ -82,7 +109,7 @@ export const forgotPassword = catchRequest(
 export const changePassword = catchRequest(
     async (req, res, next) => {
 
-        if (!req.user || req.user._id)
+        if (!req.user || !req.user._id)
             return next(new AppError("errors:authorization.UNAUTHORIZED", 401));
 
         const user = await User.findById(req.user._id).select('+password');
@@ -94,7 +121,6 @@ export const changePassword = catchRequest(
             return next(new AppError("errors:authentication.PASSWORD_NOT_SAME", 401));
 
         user.password = req.body.newPassword;
-
         await user.save();
 
         await createSendAccessToken(user, 200, res);
@@ -102,10 +128,10 @@ export const changePassword = catchRequest(
 
 export const refreshToken = catchRequest(
     async (req, res, next) => {
-        const refreshToken = req.cookies.refreshToken;
+        const refreshToken = req.cookies.jwt;
 
         if (!refreshToken)
-            return next(new AppError("e", 500));
+            return next(new AppError("errors:authentication.MISSED_JWT", 401));
 
         const decodedJWT = await verifyToken(refreshToken, process.env.REFRESH_TOKEN_SECRET as string);
 

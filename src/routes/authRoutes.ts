@@ -19,6 +19,9 @@ router.route('/login')
 router.route('/refreshToken')
     .get(authController.refreshToken)
 
+router.route('/logout')
+    .get(authController.logout);
+
 router.use(verifyJWT);
 
 router.route('/changePassword')
